@@ -190,21 +190,34 @@ public class CollectionViewWaterfallLayout: UICollectionViewLayout {
             // Item will be put into shortest column.
             for idx in 0..<itemCount {
                 let indexPath = NSIndexPath(forItem: idx, inSection: section)
-                let columnIndex = shortestColumnIndex()
-                
-                let xOffset = Float(sectionInset.left) + Float(itemWidth + minimumColumnSpacing) * Float(columnIndex)
-                let yOffset = columnHeights[columnIndex]
                 let itemSize = delegate?.collectionView(collectionView!, layout: self, sizeForItemAtIndexPath: indexPath)
-                var itemHeight: Float = 0.0
-                if itemSize?.height > 0 && itemSize?.width > 0 {
-                    itemHeight = Float(itemSize!.height) * itemWidth / Float(itemSize!.width)
-                }
-                
                 attributes = UICollectionViewLayoutAttributes(forCellWithIndexPath: indexPath)
-                attributes.frame = CGRect(x: CGFloat(xOffset), y: CGFloat(yOffset), width: CGFloat(itemWidth), height: CGFloat(itemHeight))
+
+                let landscapeItem = (itemSize!.width / itemSize!.height) > 1.0
+                
+                var columnIndex = shortestColumnIndex()
+                var yOffset = columnHeights[columnIndex]
+                var xOffset: Float = 0;
+                
+                if landscapeItem {
+                    if columnIndex + 1 < columnCount && columnHeights[columnIndex + 1] == yOffset {
+                        xOffset = Float(sectionInset.left) + Float(itemWidth + minimumColumnSpacing) * Float(columnIndex)
+                    } else {
+                        columnIndex = longestColumnIndex()
+                        yOffset = columnHeights[columnIndex]
+                        xOffset = Float(sectionInset.left) + Float(itemWidth + minimumColumnSpacing) * Float(columnIndex)
+                    }
+                    attributes.frame = CGRect(x: CGFloat(xOffset), y: CGFloat(yOffset), width: CGFloat(2.0 * itemWidth + minimumInteritemSpacing), height: CGFloat(itemWidth))
+                    columnHeights[columnIndex] = Float(CGRectGetMaxY(attributes.frame)) + minimumInteritemSpacing
+                    columnHeights[columnIndex + 1] = columnHeights[columnIndex] 
+                } else {
+                    xOffset = Float(sectionInset.left) + Float(itemWidth + minimumColumnSpacing) * Float(columnIndex)                
+                    attributes.frame = CGRect(x: CGFloat(xOffset), y: CGFloat(yOffset), width: CGFloat(itemWidth), height: CGFloat(2.0 * itemWidth + minimumInteritemSpacing))
+                    columnHeights[columnIndex] = Float(CGRectGetMaxY(attributes.frame)) + minimumInteritemSpacing
+                }
                 itemAttributes.append(attributes)
                 allItemAttributes.append(attributes)
-                columnHeights[columnIndex] = Float(CGRectGetMaxY(attributes.frame)) + minimumInteritemSpacing
+
             }
             
             sectionItemAttributes.append(itemAttributes)
